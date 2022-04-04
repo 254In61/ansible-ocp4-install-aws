@@ -1,0 +1,25 @@
+---
+# Destroy the cluster
+- debug:
+    msg:
+      - "Destruction of cluster starting now."
+      - "You can keep checking the progress by reading the file with command below"
+      - "tail -f {{ openshift_build_dir }}/.openshift_install.log"
+
+- name: use the installer tool to destroy the cluster
+  shell: "{{ openshift_working_dir }}/openshift-install destroy cluster --dir={{ openshift_build_dir }}"
+  register: destroy
+
+- debug:
+    var: destroy["stderr_lines"]
+
+- debug:
+    msg: 
+      - "Successfull run of : {{ openshift_working_dir }}/openshift-install destroy cluster --dir={{ openshift_build_dir }}"
+      - "Cluster successfully destroyed"
+
+- name: Destroy the build directory ==> {{ openshift_build_dir }}
+  file:
+    path: "{{ openshift_build_dir }}"
+    state: absent
+

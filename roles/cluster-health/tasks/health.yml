@@ -1,0 +1,33 @@
+---
+# Perform health checks
+- name: Check if oc binary file is already present in build directory {{ openshift_build_dir }}
+  stat:
+    path: "{{ openshift_build_dir }}/oc"
+  register: file_check
+
+- name: Extract  OpenShift CLI (oc) binary from /Downloads to {{ openshift_build_dir  }}
+  shell: "tar xvzf {{ openshift_cli_file_source }} -C {{ openshift_build_dir }}"
+  when: file_check["stat"]["exists"] != true
+
+- name: Verify you can run oc commands successfully using the exported configuration
+  command: "{{ openshift_build_dir }}/oc whoami"
+  register: verify
+
+- debug:
+    var: verify["stdout_lines"]
+
+- name: Obtain the cluster version and overall status
+  command: oc get clusterversion
+  register: version
+
+- debug:
+    var: version["stdout_lines"]
+
+- name: List the status of the cluster nodes.
+  command: oc get nodes
+  register: status
+
+- debug:
+    var: status["stdout_lines"]
+
+

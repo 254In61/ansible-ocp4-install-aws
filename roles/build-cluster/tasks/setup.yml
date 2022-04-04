@@ -1,0 +1,65 @@
+---
+# Set up tasks 
+- name: create build directory for deployment artifacts
+  file:
+    path: "{{ openshift_build_dir }}"
+    state: directory
+
+- name: Check if openshift installer is already present in build directory {{ openshift_build_dir }}
+  stat:
+    path: "{{ openshift_build_dir }}/openshift-install"
+  register: file_check
+
+# - debug:
+#     var: file_check
+
+- debug:
+    msg: "openshift installer is already present in build directory {{ openshift_build_dir }}"
+  when: file_check["stat"]["exists"] == true
+    
+- name: Extract  openshift installer binary from /Downloads to {{ openshift_build_dir  }}
+  shell: "tar xvzf {{ openshift_installation_file_source }} -C {{ openshift_build_dir }}"
+  when: file_check["stat"]["exists"] != true
+
+- name: Copy openshift-install binary file to Current Working Directory - {{ openshift_working_dir }}
+  shell: "cp {{ openshift_build_dir }}/openshift-install {{ openshift_working_dir }}"
+  when: file_check["stat"]["exists"] != true
+
+- name: Check that the installer runs correctly
+  shell: "./openshift-install version"
+  register: ver_output
+
+- debug:
+    var: ver_output["stdout_lines"]
+
+- assert:
+    that: 
+      - ver_output["failed"] == false
+      - '"openshift-install 4." in ver_output["stdout"]'
+    fail_msg: "FAIL : Check that the installer runs correctly"
+    success_msg: "PASS: Check that the installer runs correctly"
+
+- name: generate cluster ssh key pair
+  openssh_keypair:
+    path: "{{ openshift_build_dir }}/{{ openshift_cluster_name }}-key"
+    size: 4096
+    type: rsa
+
+- name: create openshift install-config.yaml file
+  template:
+    src: "install-config.yaml.j2"
+    dest: "{{ openshift_build_dir }}/install-config.yaml"
+
+#install-config.yaml file is destroyed once cluster build is complete. It's a good idea to have a backup.You will need this to install multiple clusters
+
+- name: Backup install-config.yaml file
+  shell: "cp {{ openshift_build_dir }}/install-config.yaml {{ openshift_build_dir }}/install-config.yaml.backup"
+
+- debug:
+    msg:
+      - "Building of cluster started/"
+      - "You can keep checking the progress by reading the file with command below."
+      - "tail -f {{ openshift_build_dir }}/.openshift_install.log"
+  
+- name: Install ocp4 cluster using openshift-install 
+  shell: "./openshift-install create cluster --dir={{ openshift_build_dir }} --log-level=info"

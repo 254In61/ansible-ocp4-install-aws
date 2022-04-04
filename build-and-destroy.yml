@@ -1,0 +1,37 @@
+---
+# Sample code to do AWS Stuff
+# https://medium.datadriveninvestor.com/devops-using-ansible-to-provision-aws-ec2-instances-3d70a1cb155f
+
+- name: OCP4 INSTALLATION
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - include_vars:
+        dir: group_vars
+ 
+    - name: Read {{ pull_secret_file }} file contents
+      shell: "cat {{ pull_secret_file }}"
+      register: output
+
+    # Needed step. install-config.yaml must have this value as a string.
+    - name: Convert pull_secret value to string.
+      set_fact:
+        openshift_pull_secret: "'{{ output['stdout'] }}'"
+    
+    - import_role:
+        name: build-cluster
+
+    - name: Sleep for 10 minutes (600 sec) for cluster to converge
+      wait_for:
+        timeout: 600
+      delegate_to: localhost
+
+    - import_role:
+        name: cluster-health
+
+    - import_role:
+        name: destroy-cluster
+    
+    

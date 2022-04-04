@@ -1,0 +1,26 @@
+---
+# Sample code to do AWS Stuff
+# https://medium.datadriveninvestor.com/devops-using-ansible-to-provision-aws-ec2-instances-3d70a1cb155f
+
+# After you terminate an instance, it remains visible in the console for a short while, and then the entry is automatically deleted. 
+# You cannot delete the terminated instance entry yourself. After an instance is terminated, 
+# resources such as tags and volumes are gradually disassociated from the instance and may no longer be visible on the terminated instance after a short while.
+# When an instance terminates, the data on any instance store volumes associated with that instance is deleted.
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/terminating-instances.html
+
+- name: DESTROY CLUSTER
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    # IMPORTING SET VARIABLES
+    - include_vars:
+        dir: group_vars
+
+    - import_role:
+        name: destroy-cluster
+
+
+    
+    
