@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+ansible-playbook build-and-destroy.yml -e "@../common/creds.yml"
+
